@@ -1,0 +1,135 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #90beea;
+  overflow: hidden;
+  font-family: 'Merriweather', serif;
+  color: #31894a;
+}
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  padding: 0;
+}
+.screen {
+  height: 100%;
+}
+.centered {
+  display: inline-block;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+}
+.panel {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 25px;
+}
+@font-face {
+  font-family: 'Merriweather';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Merriweather'), url(../data/fonts/Merriweather.woff) format('woff');
+}
+@font-face {
+  font-family: 'Merriweather';
+  font-style: normal;
+  font-weight: 900;
+  src: local('Merriweather Heavy'), local('Merriweather-Heavy'), url(../data/fonts/MerriweatherHeavy.woff) format('woff');
+}
+#menu-screen {
+  height: 100%;
+  background-image: url('../data/images/textures/factoryironstone2.jpg');
+}
+#menu-screen * {
+  text-align: center;
+}
+#menu-screen h1 {
+  padding-top: 3px;
+  text-align: center;
+  font-size: 45px;
+  line-height: 44px;
+  font-weight: normal;
+}
+#menu-screen nav {
+  margin-top: 20px;
+}
+#menu-screen nav button {
+  margin-right: 7px;
+}
+#menu-screen nav button:last-child {
+  margin-right: 0;
+}
+#options-screen {
+  height: 100%;
+  background-image: url('../data/images/textures/factoryironstone2.jpg');
+}
+#options-screen * {
+  text-align: center;
+}
+#options-screen h1 {
+  margin-bottom: 15px;
+  padding-top: 3px;
+  text-align: center;
+  font-size: 45px;
+  line-height: 45px;
+  font-weight: normal;
+}
+#options-screen label {
+  display: block;
+  margin-top: 15px;
+}
+#options-screen input[type=range] {
+  vertical-align: middle;
+  outline: 0;
+}
+#options-screen input[type=range] + span {
+  display: inline-block;
+  width: 40px;
+}
+#options-screen button {
+  display: inline-block;
+  margin-top: 15px;
+}
+#loading-screen {
+  height: 100%;
+}
+#loading-screen * {
+  text-align: center;
+}
+#game-screen header {
+  position: fixed;
+  top: 5px;
+  left: 0;
+  right: 15px;
+  padding-right: 15px;
+  text-align: right;
+  font-family: monospace;
+  font-size: 18px;
+}
+#game-screen header #timeHud {
+  display: inline-block;
+  width: 100px;
+}
+#game-screen header #heightHud {
+  display: inline-block;
+  width: 200px;
+}
+#game-screen #gameOver {
+  width: 300px;
+  padding: 20px;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 5px 1px #000;
+}
+.component-progressbar {
+  height: 20px;
+}
+.component-progressbar > div {
+  height: 100%;
+  background-color: blue;
+}

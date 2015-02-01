@@ -1,0 +1,14 @@
+{
+	"main": "index.html",
+	"name": "Highrise",
+	"version": "0.0.1",
+
+	"user-agent": "%name %ver; %osinfo",
+
+	"window": {
+		"title": "Highrise (One Game a Month)",
+		//"icon": "icon.png",
+		"position": "center",
+		"fullscreen": true
+	}
+}
