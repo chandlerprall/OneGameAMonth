@@ -1,0 +1,43 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #90beea;
+    overflow: hidden;
+    font-family: 'Merriweather', serif;
+    color: rgb(49, 137, 74);
+}
+
+h1, h2, h3, h4 {
+    margin: 0;
+    padding: 0;
+}
+
+.screen {
+    height: 100%;
+}
+
+.centered {
+    display: inline-block;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+}
+
+.panel {
+    background-color: rgba( 0, 0, 0, 0.7 );
+    padding: 25px;
+}
+
+// Fonts
+@import "fonts";
+
+// Screens
+@import "screens/menu";
+@import "screens/options";
+@import "screens/loading";
+@import "screens/game";
+
+// Components
+@import "components/progressbar";
