@@ -1,0 +1,55 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+}
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+#container {
+  position: relative;
+  height: 100%;
+}
+button {
+  background-color: #db0001;
+  border-color: #f40001 #c40001 #c40001 #f40001;
+  border-width: 1px 3px 3px 1px;
+  outline-width: 0;
+}
+button:active {
+  border-color: #c40001 #f40001 #f40001 #c40001;
+}
+#SplashComponent {
+  height: 100%;
+}
+#SplashComponent h1 {
+  display: inline-block;
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 5vw;
+}
+#SplashComponent button {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3vw;
+}
+#GameComponent {
+  height: 100%;
+  color: white;
+}
