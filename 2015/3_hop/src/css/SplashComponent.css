@@ -1,0 +1,18 @@
+#SplashComponent {
+  height: 100%;
+}
+#SplashComponent h1 {
+  display: inline-block;
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 5vw;
+}
+#SplashComponent button {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3vw;
+}
