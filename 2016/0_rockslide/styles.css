@@ -7,3 +7,14 @@ canvas {
     height: 100%;
     width: 100%;
 }
+
+#health {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 24pt;
+    margin: 10px;
+}
+#health:before {
+    content: 'health: '
+}
