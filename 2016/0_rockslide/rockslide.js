@@ -8,8 +8,8 @@ var GROUP_ROCK = 2;
 
 var scene = new physijs.Scene( 'lib/physijs-worker.min.js' );
 var camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 100 );
-camera.position.set( 0, 50, 50 );
-camera.lookAt( scene.position );
+camera.position.set( 40, 20, 0 );
+camera.lookAt( new THREE.Vector3( 0, 5, 0 ) );
 
 // light
 var ambient = new THREE.AmbientLight( 0x444444 );
@@ -52,7 +52,9 @@ house.castShadow = house.receiveShadow = true;
 house.addEventListener(
     'physics.newContact',
     function( details ) {
-        house.health -= details.relative_linear_velocity.length();
+        if ( details.other_body.physics.collision_groups && GROUP_ROCK ) {
+			house.health -= details.relative_linear_velocity.length();
+		}
     }
 );
 scene.add( house );
@@ -67,7 +69,7 @@ function fadeTree( tree, details ) {
 }
 
 var tree_geometry = new THREE.BoxGeometry( 1, 4, 1 );
-var tree_material = new THREE.MeshLambertMaterial({ color: 0x33dd33, depthTest: false, transparent: true, opacity: 1 });
+var tree_material = new THREE.MeshLambertMaterial({ color: 0x33dd33, transparent: true, opacity: 1 });
 var tree_description = { mass: 0.2 };
 for ( var i = 0; i < 6; i++ ) {
     for ( var j = 0; j < 3; j++ ) {
@@ -84,7 +86,7 @@ for ( var i = 0; i < 6; i++ ) {
 var rocks = [];
 var fading = [];
 var rock_geometry = new THREE.SphereGeometry( 2, 4, 4 );
-var rock_material = new THREE.MeshPhongMaterial({ color: 0x999999, depthTest: false, transparent: true, opacity: 1, shading: THREE.FlatShading });
+var rock_material = new THREE.MeshPhongMaterial({ color: 0x999999, transparent: true, opacity: 1, shading: THREE.FlatShading });
 var rock_description = { mass: 1, collision_groups: GROUP_ROCK };
 var rock_lifetime = 5000;
 var object_fadetime = 1000;
@@ -112,10 +114,7 @@ function makeFader( object ) {
 }
 
 var physics_framerate = 1000 / 60;
-var $health = document.getElementById( 'health' );
 function onStep(step_index) {
-    $health.textContent = Math.round( house.health );
-
     if ( step_index % 120 === 0 ) {
         spawnRock();
     }
@@ -153,34 +152,53 @@ function onStep(step_index) {
 spawnRock();
 scene.step( physics_framerate / 1000, undefined, onStep );
 
-var cut = {};
+var is_cutting = false;
+var cut_points = [];
 var cutter = new THREE.Mesh(
-    new THREE.BoxGeometry( 6, 50, 20 ),
-    new THREE.MeshLambertMaterial({ transparent: true, opacity: 0, color: 0x4444ff })
+    new THREE.BoxGeometry( 6, 10, 40 ),
+    new THREE.MeshLambertMaterial({ transparent: true, depthWrite: false, opacity: 0, color: 0x4444ff })
 );
 var cutter_orientation = new THREE.Vector3( 0, 0, 1 );
 cutter.geometry.vertices.forEach(function(vertex) {
-    vertex.x += 3;
+    vertex.y += 5;
 });
 scene.add( cutter );
 
 renderer.domElement.addEventListener(
-    'mousedown',
-    function( e ) {
-        cut.startx = e.clientX;
-        cut.starty = e.clientY;
-    }
+	'mousedown',
+	function( e ) {
+		is_cutting = true;
+		cut_points.push( e.clientX, e.clientY );
+	}
 );
 
 renderer.domElement.addEventListener(
-    'touchstart',
-    function( e ) {
-        cut.startx = e.changedTouches[0].clientX;
-        cut.starty = e.changedTouches[0].clientY;
-    }
+	'touchstart',
+	function( e ) {
+		is_cutting = true;
+		cut_points.push( e.changedTouches[0].clientX, e.changedTouches[0].clientY );
+	}
 );
 
-function getWorldPointFromCoords(x, y) {
+renderer.domElement.addEventListener(
+	'mousemove',
+	function( e ) {
+		if ( is_cutting === true ) {
+			cut_points.push(e.clientX, e.clientY);
+		}
+	}
+);
+
+renderer.domElement.addEventListener(
+	'touchmove',
+	function( e ) {
+		if ( is_cutting === true ) {
+			cut_points.push(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+		}
+	}
+);
+
+function getRayFromCoords(x, y) {
     raycaster.setFromCamera(
         {
             x: ( x / renderer.domElement.clientWidth ) * 2 - 1,
@@ -188,9 +206,7 @@ function getWorldPointFromCoords(x, y) {
         },
         camera
     );
-    var y_scale = camera.position.y / raycaster.ray.direction.y;
-    var pos0 = new THREE.Vector3().copy( raycaster.ray.direction ).multiplyScalar( y_scale );
-    return new THREE.Vector3().copy( camera.position ).sub( pos0 );
+	return raycaster.ray.direction.clone().multiplyScalar( 100 ).add( camera.position );
 }
 
 function centerMeshGeometry( mesh ) {
@@ -199,85 +215,119 @@ function centerMeshGeometry( mesh ) {
 }
 
 var raycaster = new THREE.Raycaster();
-function doCut() {
-    var start_point = getWorldPointFromCoords( cut.startx, cut.starty );
-    var end_point = getWorldPointFromCoords( cut.endx, cut.endy );
-    var transition = new THREE.Vector3().copy( end_point ).sub( start_point ).normalize();
-    var cut_speed = transition.clone().multiplyScalar( 5 );
+function startCut() {
+    var points = [];
+	for (var i = 0; i < cut_points.length; i += 2) {
+		points.push({
+			start: camera.position,
+			end: getRayFromCoords( cut_points[i], cut_points[i+1])
+		});
+	}
+	
+	scene.physics.raytrace(
+		points,
+		function(rays) {
+			var closest_rock;
+			var closest_distance = Infinity;
+			var vec3 = new THREE.Vector3();
 
-    var cross = new THREE.Vector3().crossVectors( cutter_orientation, transition );
-    cutter.quaternion.set(
-        cross.x, cross.y, cross.z,
-        1 + cutter_orientation.dot( transition )
-    ).normalize();
+			rays.forEach(function(ray) {
+				ray.forEach(function(intersection) {
+					var body = intersection.body;
+					if ( body.physics && body.physics.collision_groups && GROUP_ROCK ) {
+						var rock_distance = vec3.copy( body.position ).sub( camera.position ).length();
+						if ( rock_distance < closest_distance ) {
+							closest_distance = rock_distance;
+							closest_rock = body;
+						}
+					}
+				});
+			});
 
-    cutter.position.copy( start_point );
+			if ( closest_rock ) {
+				// project onto closest rock
+				var start_point = getRayFromCoords( cut_points[0], cut_points[1] );
+				var end_point = getRayFromCoords( cut_points[cut_points.length - 2], cut_points[cut_points.length - 1] );
+				var transition = new THREE.Vector3().copy( end_point ).sub( start_point ).normalize();
+				var cut_speed = transition.clone().multiplyScalar( 5 ).add( new THREE.Vector3( -3, 0, 0 ) );
 
-    var cutter_bsp = new ThreeBSP( cutter );
-    var new_rocks = [];
-    for ( var i = 0; i < rocks.length; i++ ) {
-        var rock = rocks[i];
-        var rock_bsp = new ThreeBSP( rock );
-        var side_a_bsp = rock_bsp.intersect( cutter_bsp );
-        var side_b_bsp = rock_bsp.subtract( side_a_bsp );
+				var cross = new THREE.Vector3().crossVectors( cutter_orientation, transition );
+				cutter.quaternion.set(
+					cross.x, cross.y, cross.z,
+					1 + cutter_orientation.dot( transition )
+				).normalize();
 
-        var side_a = side_a_bsp.toMesh( rock_material );
-        var side_b = side_b_bsp.toMesh( rock_material );
+				cutter.position.copy( closest_rock.position );
 
-        var has_a_side = false;
+				finishCut( closest_rock, cut_speed );
+			}
 
-        if ( side_a.geometry.vertices.length > 0 ) {
-            has_a_side = true;
-            side_a = physijs.Convex( side_a, rock_description );
-            side_a.physics.linear_velocity.copy( rock.physics.linear_velocity );
-            side_a.physics.angular_velocity.copy( rock.physics.angular_velocity );
-            centerMeshGeometry( side_a );
-            side_a.castShadow = side_a.receiveShadow = true;
-            side_a.time_alive = rock.time_alive;
-            scene.add( side_a );
-            new_rocks.push( side_a );
-        }
+			cut_points.length = 0;
+		}
+	)
+}
 
-        if ( side_b.geometry.vertices.length > 0 ) {
-            has_a_side = true;
-            side_b = physijs.Convex( side_b, rock_description );
-            side_b.physics.linear_velocity.copy( rock.physics.linear_velocity );
-            side_b.physics.angular_velocity.copy( rock.physics.angular_velocity );
-            centerMeshGeometry( side_b );
-            side_b.castShadow = side_b.receiveShadow = true;
-            side_b.time_alive = rock.time_alive;
-            scene.add( side_b );
-            new_rocks.push( side_b );
-        }
+function finishCut( rock, cut_speed ) {
+	var cutter_bsp = new ThreeBSP( cutter );
 
-        if ( side_a.geometry.vertices.length > 0 && side_b.geometry.vertices.length > 0 ) {
-            side_a.physics.linear_velocity.add( cut_speed );
-            side_b.physics.linear_velocity.add( cut_speed );
-        }
+	var rock_bsp = new ThreeBSP( rock );
+	var side_a_bsp = rock_bsp.intersect( cutter_bsp );
+	var side_b_bsp = rock_bsp.subtract( side_a_bsp );
 
-        if ( has_a_side ) {
-            scene.remove( rock );
-        } else {
-            new_rocks.push( rock );
-        }
-    }
-    rocks = new_rocks;
+	var side_a = side_a_bsp.toMesh( rock_material );
+	var side_b = side_b_bsp.toMesh( rock_material );
+
+	var has_a_side = false;
+
+	if ( side_a.geometry.vertices.length > 0 ) {
+		has_a_side = true;
+		side_a = physijs.Convex( side_a, rock_description );
+		side_a.physics.linear_velocity.copy( rock.physics.linear_velocity );
+		side_a.physics.angular_velocity.copy( rock.physics.angular_velocity );
+		centerMeshGeometry( side_a );
+		side_a.castShadow = side_a.receiveShadow = true;
+		side_a.time_alive = rock.time_alive;
+		scene.add( side_a );
+		rocks.push( side_a );
+	}
+
+	if ( side_b.geometry.vertices.length > 0 ) {
+		has_a_side = true;
+		side_b = physijs.Convex( side_b, rock_description );
+		side_b.physics.linear_velocity.copy( rock.physics.linear_velocity );
+		side_b.physics.angular_velocity.copy( rock.physics.angular_velocity );
+		centerMeshGeometry( side_b );
+		side_b.castShadow = side_b.receiveShadow = true;
+		side_b.time_alive = rock.time_alive;
+		scene.add( side_b );
+		rocks.push( side_b );
+	}
+
+	if ( side_a.geometry.vertices.length > 0 && side_b.geometry.vertices.length > 0 ) {
+		side_a.physics.linear_velocity.add( cut_speed );
+		side_b.physics.linear_velocity.add( cut_speed );
+	}
+
+	if ( has_a_side ) {
+		scene.remove( rock );
+		rocks.splice( rocks.indexOf( rock ), 1 );
+	}
 }
 
 renderer.domElement.addEventListener(
     'mouseup',
     function( e ) {
-        cut.endx = e.clientX;
-        cut.endy = e.clientY;
-        doCut();
+		is_cutting = false;
+		cut_points.push( e.clientX, e.clientY );
+        startCut();
     }
 );
 
 renderer.domElement.addEventListener(
     'touchend',
     function( e ) {
-        cut.endx = e.changedTouches[0].clientX;
-        cut.endy = e.changedTouches[0].clientY;
-        doCut();
+		is_cutting = false;
+        cut_points.push( e.changedTouches[0].clientX, e.changedTouches[0].clientY );
+        startCut();
     }
 );
