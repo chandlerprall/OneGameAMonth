@@ -8,17 +8,19 @@ var Menu = function() {
 
 	var scene = new THREE.Scene();
 
-	var camera = new THREE.OrthographicCamera( -50, 50, -50, 50, 1, 100 );
-	camera.position.set( 0, 0, 10 );
+	var camera = new THREE.OrthographicCamera( -50, 50, 25, -25, 1, 100 );
+	camera.position.set( 0, 0, 50 );
 	camera.lookAt( scene.position );
 
 	var sprite_rockslide = new THREE.Sprite(new THREE.SpriteMaterial({
-		map: texture_loader.load('images/rockslide.png'),
-		rotation: Math.PI
+		map: texture_loader.load('images/rockslide.png')
 	}));
-	sprite_rockslide.scale.set( -40, 40, 1 );
+	sprite_rockslide.scale.set( 40, 20, 1 );
 	scene.add( sprite_rockslide );
-	window.sprite = sprite_rockslide;
+
+	var start_text = getTextMesh('start', 30, 0.2);
+	start_text.position.set( 0, -8, 0 );
+	scene.add( start_text );
 
 	function startGame() {
 		closeMenu();
