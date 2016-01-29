@@ -12,6 +12,11 @@ var Game = function() {
 	camera.position.set( 40, 20, 0 );
 	camera.lookAt( new THREE.Vector3( 0, 5, 0 ) );
 
+	// initial render to calibrate camera for raycaster
+	renderer.render(scene, camera);
+
+	var raycaster = new THREE.Raycaster();
+
 	// light
 	var ambient = new THREE.AmbientLight( 0x444444 );
 	scene.add( ambient );
@@ -55,6 +60,7 @@ var Game = function() {
 		function( details ) {
 			if ( details.other_body.physics.collision_groups && GROUP_ROCK ) {
 				house.health -= details.relative_linear_velocity.length();
+				renderHealth();
 
 				if ( house.health <= 0 ) {
 					endGame();
@@ -64,6 +70,22 @@ var Game = function() {
 		}
 	);
 	scene.add( house );
+
+	raycaster.setFromCamera( { x: 0, y: -1.25 }, camera );
+	var health_position = raycaster.ray.direction.clone();
+	health_position.multiplyScalar( camera.position.x / health_position.x ).sub( camera.position );
+
+	var health_text;
+	function renderHealth() {
+		if ( health_text ) {
+			scene.remove( health_text );
+		}
+		health_text = getTextMesh('health: ' + Math.round(house.health), 50, 0.075);
+		health_text.position.copy( health_position );
+		health_text.lookAt( camera.position );
+		scene.add( health_text );
+	}
+	renderHealth();
 
 	// trees
 	var tree_timetofade = 3000;
@@ -223,7 +245,6 @@ var Game = function() {
 		mesh.position.sub( offset );
 	}
 
-	var raycaster = new THREE.Raycaster();
 	function startCut() {
 		var points = [];
 		for (var i = 0; i < cut_points.length; i += 2) {
@@ -342,7 +363,9 @@ var Game = function() {
 	);
 
 	function endGame() {
-		is_game_ended = true;
-		document.body.removeChild( renderer.domElement );
+		if (!is_game_ended) { // ? ohhh yeah race conditions ?
+			is_game_ended = true;
+			document.body.removeChild(renderer.domElement);
+		}
 	}
 };
