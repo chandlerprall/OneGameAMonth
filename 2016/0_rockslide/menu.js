@@ -18,7 +18,7 @@ var Menu = function() {
 	sprite_rockslide.scale.set( 40, 20, 1 );
 	scene.add( sprite_rockslide );
 
-	var start_text = getTextMesh('start', 30, 0.2);
+	var start_text = getTextMesh('click to start', 50, 0.1);
 	start_text.position.set( 0, -8, 0 );
 	scene.add( start_text );
 
