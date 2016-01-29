@@ -98,7 +98,7 @@ var Game = function() {
 
 	var tree_geometry = new THREE.BoxGeometry( 1, 4, 1 );
 	var tree_material = new THREE.MeshLambertMaterial({ color: 0x33dd33, transparent: true, opacity: 1 });
-	var tree_description = { mass: 0.2 };
+	var tree_description = { mass: 200, friction: 800 };
 	for ( var i = 0; i < 6; i++ ) {
 		for ( var j = 0; j < 3; j++ ) {
 			var tree = new physijs.Box( tree_geometry, tree_material, tree_description );
@@ -113,16 +113,16 @@ var Game = function() {
 
 	var rocks = [];
 	var fading = [];
-	var rock_geometry = new THREE.SphereGeometry( 2, 4, 4 );
+	var rock_geometry = new THREE.SphereGeometry( 2.5, 5, 4 );
 	var rock_material = new THREE.MeshPhongMaterial({ color: 0x999999, transparent: true, opacity: 1, shading: THREE.FlatShading });
-	var rock_description = { mass: 1, collision_groups: GROUP_ROCK };
+	var rock_description = { mass: 200, friction: 800, collision_groups: GROUP_ROCK };
 	var rock_lifetime = 5000;
 	var object_fadetime = 1000;
 	function spawnRock() {
 		var rock = new physijs.Convex( rock_geometry, rock_material, rock_description );
-		rock.position.set( -20 + Math.random() * 3, 10, 0 );
+		rock.position.set( -20 + Math.random() * 3, 12, 0 );
 		rock.physics.linear_velocity.set( 15, -20, 0 );
-		rock.physics.angular_velocity.set( Math.random() * 3, Math.random() * 3, Math.random() * 3 );
+		rock.physics.angular_velocity.set( Math.random() * 3, Math.random() * 3, Math.random() * -10 );
 		rock.castShadow = rock.receiveShadow = true;
 		rock.time_alive = 0;
 		scene.add( rock );
