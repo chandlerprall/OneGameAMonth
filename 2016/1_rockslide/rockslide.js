@@ -1,4 +1,4 @@
-var Game = function() {
+var Game = function(starting_objects) {
 	var renderer = new THREE.WebGLRenderer({ antialias: true });
 	renderer.autoClear = false;
 	renderer.setClearColor( new THREE.Color( 0xffffff ) );
@@ -38,19 +38,28 @@ var Game = function() {
 	sunlight.shadow.camera.far = 100;
 	scene.add( sunlight );
 
-	var ground_geometry = new THREE.BoxGeometry( 50, 50, 0.1, 10, 10, 1 );
-	ground_geometry.vertices.forEach(function(vertex) {
-		if ( vertex.z > 0 && vertex.x < -10 ) {
-			vertex.z = Math.max( 0, -vertex.x ) / 3;
-		}
+	var hill_geometry = new THREE.BoxGeometry( 10, 50, 0.1, 5, 10, 1 );
+	hill_geometry.vertices.forEach(function(vertex) {
+		vertex.z = -vertex.x / 1;
 	});
-	ground_geometry.computeVertexNormals();
-	ground_geometry.computeFaceNormals();
-	var ground = new physijs.TriangleMesh(
-		ground_geometry,
+	hill_geometry.computeVertexNormals();
+	hill_geometry.computeFaceNormals();
+	var hill = new physijs.TriangleMesh(
+		hill_geometry,
 		new THREE.MeshPhongMaterial({ color: 0x55ee33, shading: THREE.FlatShading })
 	);
-	ground.quaternion.set( -1, 0, 0, 1 ).normalize();
+	hill.position.set( -17, 5, 0 );
+	hill.quaternion.set( -1, 0, 0, 1 ).normalize();
+	hill.receiveShadow = true;
+	scene.add( hill );
+
+	var ground_geometry = new THREE.BoxGeometry( 50, 0.01, 50 );
+	var ground_material = new THREE.MeshLambertMaterial({ color: 0x55ee33 });
+	var ground = new physijs.Box(
+		ground_geometry,
+		ground_material
+	);
+	ground.position.set( 0, -0.005, 0 );
 	ground.receiveShadow = true;
 	scene.add( ground );
 
@@ -100,16 +109,25 @@ var Game = function() {
 	var tree_geometry = new THREE.BoxGeometry( 1, 4, 1 );
 	var tree_material = new THREE.MeshLambertMaterial({ color: 0x33dd33, transparent: true, opacity: 1 });
 	var tree_description = { mass: 200, friction: 800 };
-	for ( var i = 0; i < 6; i++ ) {
-		for ( var j = 0; j < 3; j++ ) {
-			var tree = new physijs.Box( tree_geometry, tree_material, tree_description );
-			tree.castShadow = tree.receiveShadow = true;
-			tree.position.set( j * 4, 2, i * 2 - 6 );
+	for ( var i = 0; i < starting_objects.trees; i++ ) {
+		var tree = new physijs.Box( tree_geometry, tree_material, tree_description );
+		tree.castShadow = tree.receiveShadow = true;
+		tree.position.set( 0, 2, i * 2 - starting_objects.trees + 1 );
 
-			tree.addEventListener( 'physics.newContact', fadeTree.bind( null, tree ) );
+		tree.addEventListener( 'physics.newContact', fadeTree.bind( null, tree ) );
 
-			scene.add( tree );
-		}
+		scene.add( tree );
+	}
+
+	// fences
+	var fence_geometry = new THREE.BoxGeometry( 0.5, 2, 10 );
+	var fence_material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+	var fence_description = { mass: 8000, friction: 400 };
+	for ( i = 0; i < starting_objects.fences; i++ ) {
+		var fence = new physijs.Box( fence_geometry, fence_material, fence_description );
+		fence.castShadow = fence.receiveShadow = true;
+		fence.position.set( 2 + i * 2, 1, 0 );
+		scene.add( fence );
 	}
 
 	var rocks = [];
@@ -122,8 +140,8 @@ var Game = function() {
 	function spawnRock() {
 		var rock = new physijs.Convex( rock_geometry, rock_material, rock_description );
 		rock.position.set( -20 + Math.random() * 3, 12, 0 );
-		rock.physics.linear_velocity.set( 15, -20, 0 );
-		rock.physics.angular_velocity.set( Math.random() * 3, Math.random() * 3, Math.random() * -10 );
+		rock.physics.linear_velocity.set( 15, -40, 0 );
+		rock.physics.angular_velocity.set( Math.random() * 10, Math.random() * 3, Math.random() * -6 + 3 );
 		rock.castShadow = rock.receiveShadow = true;
 		rock.time_alive = 0;
 		scene.add( rock );
@@ -147,7 +165,7 @@ var Game = function() {
 	function onStep(step_index) {
 		if ( is_game_ended ) return;
 
-		if ( step_index % 120 === 0 ) {
+		if ( step_index % 60 === 0 ) {
 			spawnRock();
 		}
 
@@ -269,11 +287,15 @@ var Game = function() {
 				var closest_rock;
 				var closest_distance = Infinity;
 				var vec3 = new THREE.Vector3();
+				var rocks_hit = [];
 
 				rays.forEach(function(ray) {
 					ray.forEach(function(intersection) {
 						var body = intersection.body;
 						if ( body.physics && body.physics.collision_groups && GROUP_ROCK ) {
+							if (rocks_hit.indexOf(body) === -1) {
+								rocks_hit.push(body);
+							}
 							var rock_distance = vec3.copy( body.position ).sub( camera.position ).length();
 							if ( rock_distance < closest_distance ) {
 								closest_distance = rock_distance;
@@ -288,7 +310,7 @@ var Game = function() {
 					var start_point = getRayFromCoords( cut_points[0], cut_points[1] );
 					var end_point = getRayFromCoords( cut_points[cut_points.length - 2], cut_points[cut_points.length - 1] );
 					var transition = new THREE.Vector3().copy( end_point ).sub( start_point ).normalize();
-					var cut_speed = transition.clone().multiplyScalar( 5 ).add( new THREE.Vector3( -3, 0, 0 ) );
+					var cut_speed = transition.clone().multiplyScalar( 1 ).add( new THREE.Vector3( -3, 0, 0 ) );
 
 					var cross = new THREE.Vector3().crossVectors( cutter_orientation, transition );
 					cutter.quaternion.set(
@@ -298,7 +320,9 @@ var Game = function() {
 
 					cutter.position.copy( closest_rock.position );
 
-					finishCut( closest_rock, cut_speed );
+					rocks_hit.forEach(function( rock ) {
+						finishCut( rock, cut_speed );
+					});
 				}
 
 				cut_points.length = 0;
@@ -318,9 +342,14 @@ var Game = function() {
 
 		var has_a_side = false;
 
+		var physics_description = {
+			mass: rock.physics.mass / 4,
+			friction: rock.physics.friction,
+			collision_groups: rock.physics.collision_groups
+		};
 		if ( side_a.geometry.vertices.length > 0 ) {
 			has_a_side = true;
-			side_a = physijs.Convex( side_a, rock_description );
+			side_a = physijs.Convex( side_a, physics_description );
 			side_a.physics.linear_velocity.copy( rock.physics.linear_velocity );
 			side_a.physics.angular_velocity.copy( rock.physics.angular_velocity );
 			centerMeshGeometry( side_a );
@@ -332,7 +361,7 @@ var Game = function() {
 
 		if ( side_b.geometry.vertices.length > 0 ) {
 			has_a_side = true;
-			side_b = physijs.Convex( side_b, rock_description );
+			side_b = physijs.Convex( side_b, physics_description );
 			side_b.physics.linear_velocity.copy( rock.physics.linear_velocity );
 			side_b.physics.angular_velocity.copy( rock.physics.angular_velocity );
 			centerMeshGeometry( side_b );
