@@ -1,3 +1,5 @@
+var dollars = 100;
+
 var Menu = function() {
 	var texture_loader = new THREE.TextureLoader();
 
@@ -18,16 +20,16 @@ var Menu = function() {
 	sprite_rockslide.scale.set( 40, 20, 1 );
 	scene.add( sprite_rockslide );
 
-	var start_text = getTextMesh('click to start', 50, 0.1);
+	var start_text = getTextMesh( 'click to start', 50, 0.1 );
 	start_text.position.set( 0, -8, 0 );
 	scene.add( start_text );
 
-	function startGame() {
+	function buyThings() {
 		closeMenu();
 	}
 
-	renderer.domElement.addEventListener( 'click', startGame );
-	renderer.domElement.addEventListener( 'touch', startGame );
+	renderer.domElement.addEventListener( 'click', buyThings );
+	renderer.domElement.addEventListener( 'touch', buyThings );
 
 	var is_game_started = false;
 	function render() {
@@ -41,6 +43,6 @@ var Menu = function() {
 	function closeMenu() {
 		is_game_started = false;
 		document.body.removeChild( renderer.domElement );
-		Game();
+		Buy();
 	}
 };
